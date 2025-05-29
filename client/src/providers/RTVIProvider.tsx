@@ -20,6 +20,9 @@ export function RTVIProvider({ children }: PropsWithChildren) {
     console.log('Setting up Transport and Client');
     const transport = new DailyTransport();
 
+    const searchParams = new URLSearchParams(window.location.search);
+    const user_id = searchParams.get('user_id');
+
     const rtviClient = new RTVIClient({
       transport,
       params: {
@@ -27,7 +30,7 @@ export function RTVIProvider({ children }: PropsWithChildren) {
         endpoints: {
           connect: '/connect',
         },
-        requestData: { foo: 'bar' },
+        requestData: { user_id },
       },
       enableMic: true,
       enableCam: false,

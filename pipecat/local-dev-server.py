@@ -6,6 +6,7 @@ import subprocess
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 import argparse
+import json
 
 import dotenv
 
@@ -41,12 +42,16 @@ async def rtvi_connect(request: Request) -> Dict[Any, Any]:
     print("Returning room for RTVI connection")
     room_url, token = (DAILY_ROOM_URL, DAILY_TOKEN)
     print(f"Room URL: {room_url}")
+    body = await request.json()
+    print(f"Body: {body}")
 
     # Start the bot process
     try:
-        bot_file = "pipecat/bot.py"
+        bot_file = "bot.py"
+        body_escaped = json.dumps(body)
+        print(f"Body escaped: {body_escaped}")
         proc = subprocess.Popen(
-            [f"python3 {bot_file} -u {room_url} -t {token}"],
+            [f"python3 {bot_file} '{body_escaped}'"],
             shell=True,
             bufsize=1,
             cwd=os.path.dirname(os.path.abspath(__file__)),

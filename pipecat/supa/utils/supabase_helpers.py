@@ -1,6 +1,7 @@
 import sys
 from supabase import AsyncClient
 from datetime import datetime
+from dateutil.parser import isoparse
 from babel.dates import format_datetime
 from typing import Optional
 
@@ -49,7 +50,7 @@ async def fetch_and_format(
         conversation_id = conversation["conversation_id"]
         turns = await fetch_conversation_turns(client, user_id, conversation_id)
 
-        dt = datetime.fromisoformat(turns[0]["timestamp"].replace("Z", "+00:00"))
+        dt = isoparse(turns[0]["timestamp"])
         dt = dt.astimezone()
         conversation_start_human = format_datetime(
             dt, "EEEE MMMM d, yyyy hh:mm:ss", locale="en_US"

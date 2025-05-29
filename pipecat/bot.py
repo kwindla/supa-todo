@@ -4,11 +4,13 @@
 # SPDX-License-Identifier: BSD 2-Clause License
 #
 
+import asyncio
+import sys
 import argparse
 import os
-import sys
 from datetime import datetime, timezone, timedelta
-from typing import List
+from typing import List, Any
+import json
 
 from dotenv import load_dotenv
 from loguru import logger
@@ -34,7 +36,6 @@ from pipecatcloud.agent import (
 )
 from supabase import acreate_client, AsyncClient
 
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
 from supa.utils.supabase_helpers import fetch_and_format
 
 from pipecat.processors.frameworks.rtvi import (
@@ -47,7 +48,6 @@ load_dotenv(override=True)
 
 OLDEST_CONVERSATION_DATETIME = datetime.now(timezone.utc) - timedelta(weeks=2)
 
-USER_ID = os.getenv("USER_ID", "kwindla")
 CONVERSATION_MODEL = os.getenv(
     "CONVERSATION_MODEL", "models/gemini-2.5-flash-preview-native-audio-dialog"
 )
@@ -58,12 +58,12 @@ DAILY_ROOM_URL = os.getenv("DAILY_ROOM_URL")
 DAILY_TOKEN = os.getenv("DAILY_TOKEN")
 
 
-async def load_system_instruction(supabase: AsyncClient, filename: str):
+async def load_system_instruction(supabase: AsyncClient, user_id: str, filename: str):
     with open(filename, "r") as f:
         core_instruction = f.read()
 
     recent_conversations = await fetch_and_format(
-        supabase, USER_ID, oldest=OLDEST_CONVERSATION_DATETIME
+        supabase, user_id, oldest=OLDEST_CONVERSATION_DATETIME
     )
     system_instruction = f"""
 The current date and time now is {datetime.now().astimezone().strftime("%A, %B %d, %Y, at %I:%M %p")}.
@@ -83,11 +83,11 @@ You are now ready to have a new conversation with the user.
 class TranscriptHandler:
     """Handles real-time transcript processing and output."""
 
-    def __init__(self, supabase: AsyncClient):
+    def __init__(self, supabase: AsyncClient, user_id: str):
         """Initialize handler."""
         self.messages: List[TranscriptionMessage] = []
 
-        self._user_id = USER_ID
+        self._user_id = user_id
         # _conversation_id should be a user-readable timestamp with 1s granularity
         self._conversation_id = datetime.now(timezone.utc).strftime("%Y-%m-%d_%H-%M-%S")
         self._supabase: AsyncClient = supabase
@@ -141,10 +141,15 @@ async def main(args: SessionArguments):
     logger.info(f"Starting bot")
 
     if isinstance(args, DailySessionArguments):
-        logger.info("Starting Daily session")
+        logger.info(f"Starting Daily session with args body: {args.body}")
     else:
         logger.error("Invalid session arguments")
         return
+
+    if args.body:
+        user_id = args.body.get("user_id", os.getenv("USER_ID", "generic_user"))
+    else:
+        user_id = os.getenv("USER_ID", "generic_user")
 
     logger.debug(f"Creating Supabase client")
     supabase: AsyncClient = await acreate_client(SUPABASE_URL, SUPABASE_KEY)
@@ -152,6 +157,7 @@ async def main(args: SessionArguments):
     logger.debug("Loading system instruction")
     system_instruction = await load_system_instruction(
         supabase,
+        user_id,
         os.path.abspath(
             os.path.join(os.path.dirname(__file__), "system-instruction.txt")
         ),
@@ -164,7 +170,6 @@ async def main(args: SessionArguments):
         params=DailyParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
-            vad_audio_passthrough=True,
             vad_analyzer=SileroVADAnalyzer(),
         ),
     )
@@ -190,7 +195,7 @@ async def main(args: SessionArguments):
 
     # Create transcript processor and handler
     transcript = TranscriptProcessor()
-    transcript_handler = TranscriptHandler(supabase)
+    transcript_handler = TranscriptHandler(supabase, user_id)
 
     pipeline = Pipeline(
         [
@@ -248,15 +253,20 @@ async def bot(args: SessionArguments):
         raise
 
 
-async def local_dev_runner():
+async def local_dev_runner(body: Any):
     await bot(
         DailySessionArguments(
-            room_url=DAILY_ROOM_URL, token=DAILY_TOKEN, session_id="local-dev", body=""
+            room_url=DAILY_ROOM_URL,
+            token=DAILY_TOKEN,
+            session_id="local-dev",
+            body=body,
         )
     )
 
 
 if __name__ == "__main__":
-    import asyncio
-
-    asyncio.run(local_dev_runner())
+    body_json = None
+    if len(sys.argv) > 1:
+        print(f"parsing json: {sys.argv[1]}")
+        body_json = json.loads(sys.argv[1])
+    asyncio.run(local_dev_runner(body_json))

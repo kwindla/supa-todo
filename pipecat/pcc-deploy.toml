@@ -1,0 +1,9 @@
+agent_name = "khk-todo"
+image = "pluot/khk-todo:0.3"
+secret_set = "khk-todo-secrets"
+image_credentials = "dockerhub"
+enable_krisp = true
+
+[scaling]
+	min_instances = 1
+	max_instances = 10
