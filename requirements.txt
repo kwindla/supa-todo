@@ -1,0 +1,9 @@
+psycopg2-binary>=2.9
+supabase
+python-dotenv
+pipecat-ai[silero,webrtc,daily,deepgram,cartesia,openai,google]
+uvicorn
+fastapi
+pipecat-ai-small-webrtc-prebuilt
+babel
+dateparser
