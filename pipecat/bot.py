@@ -27,9 +27,11 @@ from pipecat.processors.transcript_processor import TranscriptProcessor
 from pipecat.services.gemini_multimodal_live.gemini import (
     GeminiMultimodalLiveLLMService,
 )
-from pipecat.transports.base_transport import TransportParams
-from pipecat.transports.network.small_webrtc import SmallWebRTCTransport
-from pipecat.transports.network.webrtc_connection import SmallWebRTCConnection
+from pipecat.transports.services.daily import DailyParams, DailyTransport
+from pipecatcloud.agent import (
+    DailySessionArguments,
+    SessionArguments,
+)
 from supabase import acreate_client, AsyncClient
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir)))
@@ -51,6 +53,9 @@ CONVERSATION_MODEL = os.getenv(
 )
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+
+DAILY_ROOM_URL = os.getenv("DAILY_ROOM_URL")
+DAILY_TOKEN = os.getenv("DAILY_TOKEN")
 
 
 async def load_system_instruction(supabase: AsyncClient, filename: str):
@@ -132,8 +137,14 @@ class TranscriptHandler:
             await self.save_message(msg)
 
 
-async def run_bot(webrtc_connection: SmallWebRTCConnection, _: argparse.Namespace):
+async def main(args: SessionArguments):
     logger.info(f"Starting bot")
+
+    if isinstance(args, DailySessionArguments):
+        logger.info("Starting Daily session")
+    else:
+        logger.error("Invalid session arguments")
+        return
 
     logger.debug(f"Creating Supabase client")
     supabase: AsyncClient = await acreate_client(SUPABASE_URL, SUPABASE_KEY)
@@ -146,11 +157,14 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, _: argparse.Namespac
         ),
     )
 
-    transport = SmallWebRTCTransport(
-        webrtc_connection=webrtc_connection,
-        params=TransportParams(
+    transport = DailyTransport(
+        bot_name="todo helper",
+        room_url=args.room_url,
+        token=args.token,
+        params=DailyParams(
             audio_in_enabled=True,
             audio_out_enabled=True,
+            vad_audio_passthrough=True,
             vad_analyzer=SileroVADAnalyzer(),
         ),
     )
@@ -214,6 +228,7 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, _: argparse.Namespac
     @transport.event_handler("on_client_disconnected")
     async def on_client_disconnected(transport, client):
         logger.info(f"Client disconnected")
+        await task.cancel()
 
     @transport.event_handler("on_client_closed")
     async def on_client_closed(transport, client):
@@ -224,7 +239,24 @@ async def run_bot(webrtc_connection: SmallWebRTCConnection, _: argparse.Namespac
     await runner.run(task)
 
 
-if __name__ == "__main__":
-    from run import main
+async def bot(args: SessionArguments):
+    try:
+        await main(args)
+        logger.info("Bot process completed")
+    except Exception as e:
+        logger.exception(f"Error in bot process: {str(e)}")
+        raise
 
-    main()
+
+async def local_dev_runner():
+    await bot(
+        DailySessionArguments(
+            room_url=DAILY_ROOM_URL, token=DAILY_TOKEN, session_id="local-dev", body=""
+        )
+    )
+
+
+if __name__ == "__main__":
+    import asyncio
+
+    asyncio.run(local_dev_runner())

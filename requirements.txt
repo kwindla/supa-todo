@@ -3,7 +3,8 @@ supabase
 python-dotenv
 pipecat-ai[silero,webrtc,daily,deepgram,cartesia,openai,google]
 uvicorn
-fastapi
+fastapi[all]
 pipecat-ai-small-webrtc-prebuilt
 babel
 dateparser
+pipecatcloud
