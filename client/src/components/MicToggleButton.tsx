@@ -1,38 +1,46 @@
 'use client';
 import { useCallback, useEffect, useState } from 'react';
-import { useRTVIClient } from '@pipecat-ai/client-react';
+import { RTVIEvent, TransportState } from '@pipecat-ai/client-js';
+import { useRTVIClient, useRTVIClientEvent } from '@pipecat-ai/client-react';
 
 export function MicToggleButton() {
   const client = useRTVIClient();
-  const [micEnabled, setMicEnabled] = useState(true);
 
+  const [isMicEnabled, setIsMicEnabled] = useState(
+    client?.isMicEnabled ?? false
+  );
+  const [isEnabled, setIsEnabled] = useState(client?.connected ?? false);
+
+  // todo: fix this to sync initial state rather than just assuming initial state is mic enabled
   useEffect(() => {
-    if (!client) return;
-    const track = client.tracks().local.audio as MediaStreamTrack | undefined;
-    if (track) {
-      setMicEnabled(track.enabled);
-    }
+    setIsMicEnabled(true);
   }, [client]);
 
+    useRTVIClientEvent(
+      RTVIEvent.TransportStateChanged,
+      useCallback(
+        (state: TransportState) => {
+          console.log(`Transport state changed: ${state}`);
+          setIsEnabled(state === 'connected' || state === 'ready');
+        },
+        []
+      )
+    );
+
+
   const handleClick = useCallback(async () => {
-    if (!client) return;
-    const newState = !micEnabled;
-    try {
-      await client.enableMic(newState);
-      setMicEnabled(newState);
-    } catch (error) {
-      console.error('Failed to toggle mic:', error);
-    }
-  }, [client, micEnabled]);
+    setIsMicEnabled(!isMicEnabled);
+    await client?.enableMic?.(!isMicEnabled);
+  }, [client, isMicEnabled]);
 
   return (
     <div className="controls">
       <button
-        className={micEnabled ? 'mic-enabled' : 'mic-disabled'}
+        className={isMicEnabled ? 'mic-enabled' : 'mic-disabled'}
         onClick={handleClick}
-        disabled={!client || !client.tracks().local.audio}
+        disabled={!isEnabled}
       >
-        {micEnabled ? 'Mute Mic' : 'Unmute Mic'}
+        {isMicEnabled ? 'Mute Mic' : 'Unmute Mic'}
       </button>
     </div>
   );
