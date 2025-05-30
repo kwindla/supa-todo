@@ -6,6 +6,7 @@ import {
   useRTVIClientTransportState,
 } from '@pipecat-ai/client-react';
 import { ConnectButton } from '../components/ConnectButton';
+import { MicToggleButton } from '../components/MicToggleButton';
 import { StatusDisplay } from '../components/StatusDisplay';
 import { DebugDisplay } from '../components/DebugDisplay';
 
@@ -27,7 +28,10 @@ export default function Home() {
     <div className="app">
       <div className="status-bar">
         <StatusDisplay />
-        <ConnectButton />
+        <div className="status-controls">
+          <MicToggleButton />
+          <ConnectButton />
+        </div>
       </div>
 
       <div className="main-content">

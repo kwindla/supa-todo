@@ -80,3 +80,9 @@ button:disabled {
   background-color: #f44336;
   color: white;
 }
+
+
+.status-controls {
+  display: flex;
+  align-items: center;
+}
