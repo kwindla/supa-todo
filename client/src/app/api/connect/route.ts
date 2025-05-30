@@ -1,9 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 
 export async function POST(request: NextRequest) {
-  const { MY_CUSTOM_DATA } = await request.json();
-
-  console.log('MY_CUSTOM_DATA', MY_CUSTOM_DATA);
+  const { user_id } = await request.json();
 
   try {
     const response = await fetch(
@@ -20,7 +18,7 @@ export async function POST(request: NextRequest) {
           // Optionally set Daily room properties
           dailyRoomProperties: { start_video_off: true },
           // Optionally pass custom data to the bot
-          body: { MY_CUSTOM_DATA },
+          body: { user_id },
         }),
       }
     );
