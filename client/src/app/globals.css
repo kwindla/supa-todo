@@ -81,6 +81,35 @@ button:disabled {
   color: white;
 }
 
+<<<<<<< HEAD
+.status-controls {
+  display: flex;
+  align-items: center;
+}
+
+=======
+<<<<<<< HEAD
+>>>>>>> 3e38239 (Remove SSE route and use RTVI events)
+.text-stream {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.text-stream pre {
+  width: 640px;
+  height: 360px;
+  color: #ffffff;
+  font-family: monospace;
+  overflow-y: auto;
+  margin-bottom: 10px;
+  border-radius: 8px;
+  padding: 10px;
+  white-space: pre-wrap;
+}
+
+=======
+>>>>>>> 72c25c4 (Remove SSE route and use RTVI events)
 .status-controls {
   display: flex;
   align-items: center;
@@ -102,9 +131,4 @@ button:disabled {
   border-radius: 8px;
   padding: 10px;
   white-space: pre-wrap;
-}
-
-.status-controls {
-  display: flex;
-  align-items: center;
 }
