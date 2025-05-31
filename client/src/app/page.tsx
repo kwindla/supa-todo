@@ -5,7 +5,7 @@ import { ConnectButton } from '../components/ConnectButton';
 import { MicToggleButton } from '../components/MicToggleButton';
 import { StatusDisplay } from '../components/StatusDisplay';
 import { DebugDisplay } from '../components/DebugDisplay';
-import { StreamingText } from '../components/StreamingText';
+import { StreamingDisplay } from '../components/StreamingDisplay';
 
 export default function Home() {
   return (
@@ -19,7 +19,7 @@ export default function Home() {
       </div>
 
       <div className="main-content">
-        <StreamingText />
+        <StreamingDisplay />
       </div>
 
       <DebugDisplay />

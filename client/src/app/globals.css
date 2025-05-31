@@ -105,6 +105,13 @@ button:disabled {
   white-space: pre-wrap;
 }
 
+.generated-iframe {
+  width: 100%;
+  max-width: 640px;
+  height: 360px;
+  border: none;
+}
+
 .status-controls {
   display: flex;
   align-items: center;
