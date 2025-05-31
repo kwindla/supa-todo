@@ -92,14 +92,15 @@ When you format lists, use emojis to make the list more visually appealing.
   - Use different emojis for different types of items.
   - Use a line of several different emojis as a section separator.
   - Generally be creative about emojis and formatting.
-  - Always end a list with a line break character (\n)
+  - Always end a list with two line break characters to create a blank line after the list (\n\n)
 
 Example:
 
 ✅ To-Do List
   ✈️ Take people to the airport tomorrow
   🍎 Get applesauce at the grocery store
-  
+
+
 
 # Previous Conversations
 
