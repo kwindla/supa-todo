@@ -13,14 +13,13 @@ export function MicToggleButton() {
 
   // todo: fix this to sync initial state rather than just assuming initial state is mic enabled
   useEffect(() => {
-    setIsMicEnabled(true);
+    setIsMicEnabled(true); 
   }, [client]);
 
     useRTVIClientEvent(
       RTVIEvent.TransportStateChanged,
       useCallback(
         (state: TransportState) => {
-          console.log(`Transport state changed: ${state}`);
           setIsEnabled(state === 'connected' || state === 'ready');
         },
         []

@@ -149,15 +149,8 @@ export function DebugDisplay() {
   useRTVIClientEvent(
     RTVIEvent.ServerMessage,
     useCallback(
-      (data: SmartTurnResultData) => {
-        log(
-          `Smart Turn:
-    ${data.is_complete ? 'COMPLETE' : 'INCOMPLETE'},
-    Probability: ${(data.probability * 100).toFixed(1)}%,
-    Model inference: ${data.inference_time_ms?.toFixed(2) || 'N/A'}ms,
-    Server processing: ${data.server_total_time_ms?.toFixed(2) || 'N/A'}ms,
-    End-to-end: ${data.e2e_processing_time_ms?.toFixed(2) || 'N/A'}ms`
-        );
+      (data: any) => {
+        log(`Server message: ${JSON.stringify(data)}`);
       },
       [log]
     )
