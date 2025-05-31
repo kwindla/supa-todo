@@ -16,7 +16,12 @@ export function StreamingText({ bgColor = 'black' }: StreamingTextProps) {
     useCallback((data: any) => {
       console.log("Server message:", data);
       if (!textRef.current) return;
-      textRef.current.textContent += JSON.stringify(data);
+      if (data["clear-pre-text"]) {
+        textRef.current.textContent = "";
+      }
+      if (data["display-pre-text"]) {
+        textRef.current.textContent += data["display-pre-text"];
+      }
       textRef.current.scrollTop = textRef.current.scrollHeight;
     }, [])
   );

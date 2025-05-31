@@ -25,9 +25,7 @@ from pipecat.pipeline.runner import PipelineRunner
 from pipecat.pipeline.task import PipelineParams, PipelineTask
 from pipecat.processors.aggregators.openai_llm_context import OpenAILLMContext
 from pipecat.processors.transcript_processor import TranscriptProcessor
-from pipecat.services.gemini_multimodal_live.gemini import (
-    GeminiMultimodalLiveLLMService,
-)
+
 from pipecat.transports.services.daily import DailyParams, DailyTransport
 from pipecatcloud.agent import (
     DailySessionArguments,
@@ -35,7 +33,6 @@ from pipecatcloud.agent import (
 )
 from supabase import acreate_client, AsyncClient
 
-from supa.utils.supabase_helpers import fetch_and_format
 
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
@@ -44,8 +41,12 @@ from pipecat.processors.frameworks.rtvi import (
     RTVIServerMessageFrame,
 )
 
+from gemini_live import GeminiLiveTodo
+
 load_dotenv(override=True)
 
+logger.remove()
+logger.add(sys.stderr, level="DEBUG")
 
 OLDEST_CONVERSATION_DATETIME = datetime.now(timezone.utc) - timedelta(weeks=2)
 
@@ -55,30 +56,10 @@ CONVERSATION_MODEL = os.getenv(
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 
+OLDEST_CONVERSATION_DATETIME = datetime.now(timezone.utc) - timedelta(weeks=2)
+
 DAILY_ROOM_URL = os.getenv("DAILY_ROOM_URL")
 DAILY_TOKEN = os.getenv("DAILY_TOKEN")
-
-
-async def load_system_instruction(supabase: AsyncClient, user_id: str, filename: str):
-    with open(filename, "r") as f:
-        core_instruction = f.read()
-
-    recent_conversations = await fetch_and_format(
-        supabase, user_id, oldest=OLDEST_CONVERSATION_DATETIME
-    )
-    system_instruction = f"""
-The current date and time now is {datetime.now().astimezone().strftime("%A, %B %d, %Y, at %I:%M %p")}.
-
-{core_instruction}
-    
-{recent_conversations}
-
---- END OF RECENT CONVERSATIONS ---
-
-You are now ready to have a new conversation with the user.
-    """
-
-    return system_instruction
 
 
 class TranscriptHandler:
@@ -155,15 +136,6 @@ async def main(args: SessionArguments):
     logger.debug(f"Creating Supabase client")
     supabase: AsyncClient = await acreate_client(SUPABASE_URL, SUPABASE_KEY)
 
-    logger.debug("Loading system instruction")
-    system_instruction = await load_system_instruction(
-        supabase,
-        user_id,
-        os.path.abspath(
-            os.path.join(os.path.dirname(__file__), "system-instruction.txt")
-        ),
-    )
-
     transport = DailyTransport(
         bot_name="todo helper",
         room_url=args.room_url,
@@ -175,19 +147,22 @@ async def main(args: SessionArguments):
         ),
     )
 
-    llm = GeminiMultimodalLiveLLMService(
-        api_key=os.getenv("GOOGLE_API_KEY"),
-        model=CONVERSATION_MODEL,
-        system_instruction=system_instruction,
-        voice_id="Puck",  # Aoede, Charon, Fenrir, Kore, Puck
-    )
-
+    # todo: move this inside GeminiLiveTodo?
     messages = [
         {
             "role": "user",
             "content": 'Please say the exact phrase "I am ready". Say it now.',
         }
     ]
+    gemini_live_todo = GeminiLiveTodo(
+        supabase,
+        user_id,
+        os.path.abspath(
+            os.path.join(os.path.dirname(__file__), "system-instruction.txt")
+        ),
+        messages=messages,
+    )
+    llm = await gemini_live_todo.llm()
 
     rtvi = RTVIProcessor(config=RTVIConfig(config=[]))
 
@@ -221,7 +196,7 @@ async def main(args: SessionArguments):
     async def on_client_ready(rtvi):
         logger.info("Pipecat client ready")
         await rtvi.set_bot_ready()
-        # await task.queue_frames([context_aggregator.user().get_context_frame()])
+        await task.queue_frames([context_aggregator.user().get_context_frame()])
         logger.info("Sending server message frame")
         await task.queue_frames(
             [RTVIServerMessageFrame(data={"arbitrary_key": "arbitrary_value_23"})]
