@@ -81,15 +81,11 @@ button:disabled {
   color: white;
 }
 
-<<<<<<< HEAD
 .status-controls {
   display: flex;
   align-items: center;
 }
 
-=======
-<<<<<<< HEAD
->>>>>>> 3e38239 (Remove SSE route and use RTVI events)
 .text-stream {
   display: flex;
   flex-direction: column;
@@ -108,8 +104,6 @@ button:disabled {
   white-space: pre-wrap;
 }
 
-=======
->>>>>>> 72c25c4 (Remove SSE route and use RTVI events)
 .status-controls {
   display: flex;
   align-items: center;
