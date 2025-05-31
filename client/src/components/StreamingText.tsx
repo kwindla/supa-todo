@@ -6,21 +6,23 @@ import { useRTVIClientEvent } from '@pipecat-ai/client-react';
 
 interface StreamingTextProps {
   bgColor?: string;
+  "clear-pre-text"?: boolean;
+  "display-pre-text"?: string;
 }
 
-export function StreamingText({ bgColor = 'black' }: StreamingTextProps) {
+export function StreamingText(data: StreamingTextProps) {
   const textRef = useRef<HTMLPreElement>(null);
 
   useRTVIClientEvent(
     RTVIEvent.ServerMessage,
-    useCallback((data: any) => {
-      console.log("Server message:", data);
+    useCallback((message: StreamingTextProps) => {
+      console.log("Server message:", message);
       if (!textRef.current) return;
-      if (data["clear-pre-text"]) {
+      if (message["clear-pre-text"] === true) {
         textRef.current.textContent = "";
       }
-      if (data["display-pre-text"]) {
-        textRef.current.textContent += data["display-pre-text"];
+      if (message["display-pre-text"]) {
+        textRef.current.textContent += message["display-pre-text"];
       }
       textRef.current.scrollTop = textRef.current.scrollHeight;
     }, [])
@@ -34,7 +36,7 @@ export function StreamingText({ bgColor = 'black' }: StreamingTextProps) {
 
   return (
     <div className="text-stream">
-      <pre ref={textRef} style={{ backgroundColor: bgColor }} />
+      <pre ref={textRef} style={{ backgroundColor: data.bgColor || 'black' }} />
       <button onClick={handleClear}>Clear</button>
     </div>
   );

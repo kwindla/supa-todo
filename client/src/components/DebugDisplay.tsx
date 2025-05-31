@@ -9,14 +9,6 @@ import {
 import { useRTVIClient, useRTVIClientEvent } from '@pipecat-ai/client-react';
 import './DebugDisplay.css';
 
-interface SmartTurnResultData {
-  type: 'smart_turn_result';
-  is_complete: boolean;
-  probability: number;
-  inference_time_ms: number; // Pure model inference time
-  server_total_time_ms: number; // Server processing time
-  e2e_processing_time_ms: number; // Complete end-to-end time
-}
 
 export function DebugDisplay() {
   const debugLogRef = useRef<HTMLDivElement>(null);
@@ -149,7 +141,7 @@ export function DebugDisplay() {
   useRTVIClientEvent(
     RTVIEvent.ServerMessage,
     useCallback(
-      (data: any) => {
+      (data: object) => {
         log(`Server message: ${JSON.stringify(data)}`);
       },
       [log]
