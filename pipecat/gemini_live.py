@@ -15,6 +15,8 @@ from pipecat.processors.frameworks.rtvi import (
     RTVIServerMessageFrame,
 )
 
+from genai_single_page_app import GenaiSinglePageApp
+
 
 OLDEST_CONVERSATION_DATETIME = datetime.now(timezone.utc) - timedelta(weeks=2)
 
@@ -48,6 +50,39 @@ show_preformatted_text_schema = FunctionSchema(
 )
 
 
+async def generate_single_page_app(params: FunctionCallParams):
+    """Generate a single page app from a prompt and stream the results."""
+    prompt = params.arguments.get("prompt", "")
+    logger.info(f"Generating single page app with prompt: {prompt}")
+
+    # immediately send success to caller
+    await params.result_callback({"result": "success"})
+
+    # stream the model output
+    async for chunk in await params.llm.aio.models.generate_content_stream(
+        model="gemini-2.5-pro-preview-05-06", contents=prompt
+    ):
+        text = getattr(chunk, "text", "")
+        if not text:
+            continue
+        await params.llm.push_frame(
+            RTVIServerMessageFrame(data={"display-pre-text": text})
+        )
+
+
+generate_single_page_app_schema = FunctionSchema(
+    name="generate_single_page_app",
+    description="Generate a single page app using Google Generative AI.",
+    properties={
+        "prompt": {
+            "description": "Prompt used for single page app generation",
+            "type": "string",
+        }
+    },
+    required=["prompt"],
+)
+
+
 class GeminiLiveTodo:
     def __init__(
         self,
@@ -66,6 +101,10 @@ class GeminiLiveTodo:
 
     async def llm(self):
         if self._llm_service is None:
+            self._gen_app = GenaiSinglePageApp()
+
+            logger.debug(f"gen app schema {generate_single_page_app_schema}")
+
             self._llm_service = GeminiMultimodalLiveLLMService(
                 api_key=os.getenv("GOOGLE_API_KEY"),
                 model=os.getenv(
@@ -76,10 +115,18 @@ class GeminiLiveTodo:
                     self._system_instruction_file
                 ),
                 voice_id="Puck",  # Aoede, Charon, Fenrir, Kore, Puck
-                tools=ToolsSchema(standard_tools=[show_preformatted_text_schema]),
+                tools=ToolsSchema(
+                    standard_tools=[
+                        show_preformatted_text_schema,
+                        generate_single_page_app_schema,
+                    ]
+                ),
             )
             self._llm_service.register_function(
                 "show_preformatted_text", show_preformatted_text
+            )
+            self._llm_service.register_function(
+                "generate_single_page_app", self._gen_app.generate_single_page_app
             )
         return self._llm_service
 

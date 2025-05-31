@@ -83,7 +83,17 @@ Optional argument:
 
 If the user asks you to show them a list of their tasks, priorities, or other information, use this tool to generate the list and send it to the user. If the user asks you to clear any existing preformatted text, use the clear_pre_text argument.
 
-Remember what you have show the user during this conversation. If you are adding more information to the text area without clearing it, be sure to include additional line breaks and a section separator made up of emojis. For example:
+Remember what you have shown the user during this conversation. If you are adding more information to the text area without clearing it, be sure to include additional line breaks and a section separator made up of emojis. For example:
+
+## generate_single_page_app
+
+Use this tool to generate a single page javascript app. Call this tool if the user asks you to create something interactive for them.
+
+When you call this function, think hard and create a detailed prompt for the app. The prompt should include context about what the user is trying to do. The prompt should include any relevant information from the conversation and previous history. For example, if the user asks for an interactive version of a todo list, you should include all of the items on the todo list so that the app is relevant to what the user wants to do.
+
+Required argument:
+  - prompt: The prompt used for single page app generation. The prompt should be a detailed description of what the user wants to do, including any relevant information from the conversation.
+
 
 🌈✨🌟💖🎉🥳
 

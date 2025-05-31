@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useRef, useState, useEffect } from 'react';
 import { RTVIEvent } from '@pipecat-ai/client-js';
 import { useRTVIClientEvent } from '@pipecat-ai/client-react';
 import { GeneratedCodeIframe } from './GeneratedCodeIframe';
@@ -17,65 +17,79 @@ interface ServerMessage {
 export function StreamingDisplay() {
   const textRef = useRef<HTMLPreElement>(null);
   const codeBuffer = useRef<string>('');
+  const [showText, setShowText] = useState(true);
   const [iframeCode, setIframeCode] = useState<string | null>(null);
+  const [preText, setPreText] = useState('');
 
   const handleClear = () => {
-    if (textRef.current) {
-      textRef.current.textContent = '';
-    }
+    setPreText('');
+    setShowText(true);
   };
 
-  const showText = iframeCode === null;
-
   const handleMessage = useCallback((message: ServerMessage) => {
-    if (!textRef.current) return;
-
     if (message['clear-pre-text'] === true) {
-      setIframeCode(null);
-      textRef.current.textContent = '';
+      setPreText('');
+      setShowText(true);
       return;
     }
 
     if (typeof message['display-pre-text'] === 'string') {
-      setIframeCode(null);
-      textRef.current.textContent += message['display-pre-text'];
-      textRef.current.scrollTop = textRef.current.scrollHeight;
+      setPreText(prev => prev + message['display-pre-text']);
+      setShowText(true);
       return;
     }
 
     if (message['web-application-start']) {
-      setIframeCode(null);
       codeBuffer.current = '';
-      textRef.current.textContent = '';
+      setPreText('');
+      setShowText(true);
       return;
     }
 
     if (typeof message['web-application-thinking'] === 'string') {
-      textRef.current.textContent += message['web-application-thinking'];
-      textRef.current.scrollTop = textRef.current.scrollHeight;
+      setPreText(prev => prev + message['web-application-thinking']);
       return;
     }
 
     if (typeof message['web-application-code'] === 'string') {
-      textRef.current.textContent += message['web-application-code'];
+      setPreText(prev => prev + message['web-application-code']);
       codeBuffer.current += message['web-application-code'];
-      textRef.current.scrollTop = textRef.current.scrollHeight;
+      setShowText(true);
       return;
     }
 
     if (message['web-application-end']) {
+      // strip ```html from the beginning of the buffer if needed
+      if (codeBuffer.current.startsWith('```html')) {
+        codeBuffer.current = codeBuffer.current.slice('```html'.length);
+      }
+      // strip ``` from the end of the buffer if needed
+      if (codeBuffer.current.endsWith('```')) {
+        codeBuffer.current = codeBuffer.current.slice(0, -3);
+      }
+      console.log("setting iframe code to:", codeBuffer.current);
       setIframeCode(codeBuffer.current);
+      setShowText(false);
+      setPreText('');
       return;
     }
   }, []);
 
   useRTVIClientEvent(RTVIEvent.ServerMessage, handleMessage);
 
+  // Scroll <pre> to bottom when preText changes and <pre> is shown
+  // This effect ensures scrolling even after remount
+  useEffect(() => {
+    if (showText && textRef.current) {
+      textRef.current.scrollTop = textRef.current.scrollHeight;
+    }
+  }, [preText, showText]);
+
   return (
     <div className="text-stream">
       {showText ? (
         <>
-          <pre ref={textRef} style={{ backgroundColor: 'black' }} />
+          <pre ref={textRef} style={{ backgroundColor: 'black' }}>{preText}</pre>
           <button onClick={handleClear}>Clear</button>
         </>
       ) : (
