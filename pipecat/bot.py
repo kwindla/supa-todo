@@ -19,7 +19,6 @@ from pipecat.audio.vad.silero import SileroVADAnalyzer
 from pipecat.frames.frames import (
     TranscriptionMessage,
     TranscriptionUpdateFrame,
-    LLMMessagesAppendFrame,
 )
 from pipecat.pipeline.pipeline import Pipeline
 from pipecat.pipeline.runner import PipelineRunner
@@ -40,7 +39,9 @@ from supa.utils.supabase_helpers import fetch_and_format
 
 from pipecat.processors.frameworks.rtvi import (
     RTVIConfig,
+    RTVIObserver,
     RTVIProcessor,
+    RTVIServerMessageFrame,
 )
 
 load_dotenv(override=True)
@@ -213,13 +214,18 @@ async def main(args: SessionArguments):
     task = PipelineTask(
         pipeline,
         params=PipelineParams(allow_interruptions=True),
+        observers=[RTVIObserver(rtvi)],
     )
 
     @rtvi.event_handler("on_client_ready")
     async def on_client_ready(rtvi):
         logger.info("Pipecat client ready")
         await rtvi.set_bot_ready()
-        await task.queue_frames([context_aggregator.user().get_context_frame()])
+        # await task.queue_frames([context_aggregator.user().get_context_frame()])
+        logger.info("Sending server message frame")
+        await task.queue_frames(
+            [RTVIServerMessageFrame(data={"arbitrary_key": "arbitrary_value_23"})]
+        )
 
     @transport.event_handler("on_client_connected")
     async def on_client_connected(transport, client):
