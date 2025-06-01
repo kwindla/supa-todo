@@ -3,7 +3,7 @@ from pipecat.services.llm_service import FunctionCallParams
 from pipecat.services.gemini_multimodal_live.gemini import (
     GeminiMultimodalLiveLLMService,
 )
-from pipecat.adapters.schemas.tools_schema import ToolsSchema
+from pipecat.adapters.schemas.tools_schema import AdapterType, ToolsSchema
 from loguru import logger
 import os
 from typing import Optional, List
@@ -21,8 +21,8 @@ from genai_single_page_app import GenaiSinglePageApp
 OLDEST_CONVERSATION_DATETIME = datetime.now(timezone.utc) - timedelta(weeks=2)
 
 
-async def show_preformatted_text(params: FunctionCallParams):
-    logger.info(f"Showing preformatted text: {params.arguments['text']}")
+async def show_text_on_screen(params: FunctionCallParams):
+    logger.info(f"Showing text on screen: {params.arguments['text']}")
     if params.arguments.get("clear_pre_text"):
         await params.llm.push_frame(
             RTVIServerMessageFrame(data={"clear-pre-text": True})
@@ -33,16 +33,16 @@ async def show_preformatted_text(params: FunctionCallParams):
     await params.result_callback({"result": "success"})
 
 
-show_preformatted_text_schema = FunctionSchema(
-    name="show_preformatted_text",
-    description="Show the user preformatted text. Call this function if the user asks you to show them a list of their tasks, priorities, or other information.",
+show_text_on_screen_schema = FunctionSchema(
+    name="show_text_on_screen",
+    description="Show the user text on the screen. Call this function if the user asks you to show them a list of their tasks, priorities, or other information.",
     properties={
         "text": {
-            "description": "The text to show the user.",
+            "description": "The text to show the user. This is preformatted text with line breaks and section separators.",
             "type": "string",
         },
         "clear_pre_text": {
-            "description": "Clear any existing preformatted text before showing the new text.",
+            "description": "Clear any existing preformatted text before adding the new text to the display area.",
             "type": "boolean",
         },
     },
@@ -117,13 +117,14 @@ class GeminiLiveTodo:
                 voice_id="Puck",  # Aoede, Charon, Fenrir, Kore, Puck
                 tools=ToolsSchema(
                     standard_tools=[
-                        show_preformatted_text_schema,
+                        show_text_on_screen_schema,
                         generate_single_page_app_schema,
-                    ]
+                    ],
+                    custom_tools={AdapterType.GEMINI: [{"google_search": {}}]},
                 ),
             )
             self._llm_service.register_function(
-                "show_preformatted_text", show_preformatted_text
+                "show_text_on_screen", show_text_on_screen
             )
             self._llm_service.register_function(
                 "generate_single_page_app", self._gen_app.generate_single_page_app

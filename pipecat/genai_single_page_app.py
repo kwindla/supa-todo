@@ -16,6 +16,8 @@ Output the full text of the single-page app, including HTML, inline css, and inl
 
 Output only the single-page app. Do not output any additional text.
 
+Use small fonts and minimal styling. Prefer dark mode. Prefer preformatted, monospace text.
+
 In general, keep your apps simple and focus on what the user needs to do based on the prompt.
 
 As an example, here is a very simple app.
@@ -53,7 +55,12 @@ class GenaiSinglePageApp:
         logger.info(f"Generating single page app with prompt: {prompt}")
 
         # immediately send success to caller
-        await params.result_callback({"result": "success"})
+        await params.result_callback(
+            {
+                "result": "success",
+                "response_content": "I will generate that application for you. Please be patient.",
+            }
+        )
         await params.llm.push_frame(
             RTVIServerMessageFrame(data={"display-pre-text": "Generating app..."})
         )
@@ -69,7 +76,7 @@ class GenaiSinglePageApp:
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     thinking_config=genai.types.ThinkingConfig(
-                        include_thoughts=False, thinking_budget=0
+                        include_thoughts=True, thinking_budget=2048
                     ),
                 ),
                 contents=prompt,
