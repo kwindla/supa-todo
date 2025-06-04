@@ -64,9 +64,7 @@ class GenaiSinglePageApp:
         await params.llm.push_frame(
             RTVIServerMessageFrame(data={"display-pre-text": "Generating app..."})
         )
-        await params.llm.push_frame(
-            RTVIServerMessageFrame(data={"web-application-start": True})
-        )
+        await params.llm.push_frame(RTVIServerMessageFrame(data={"web-application-start": True}))
 
         try:
             # stream the model output
@@ -76,7 +74,7 @@ class GenaiSinglePageApp:
                 config=genai.types.GenerateContentConfig(
                     system_instruction=system_instruction,
                     thinking_config=genai.types.ThinkingConfig(
-                        include_thoughts=True, thinking_budget=2048
+                        include_thoughts=True, thinking_budget=6144
                     ),
                 ),
                 contents=prompt,
@@ -89,17 +87,13 @@ class GenaiSinglePageApp:
                     RTVIServerMessageFrame(data={"web-application-code": text})
                 )
         except Exception as e:
-            await params.llm.push_frame(
-                RTVIServerMessageFrame(data={"web-application-end": True})
-            )
+            await params.llm.push_frame(RTVIServerMessageFrame(data={"web-application-end": True}))
             logger.error(f"Error generating single page app: {e}")
             await params.llm.push_frame(
                 RTVIServerMessageFrame(data={"display-pre-text": f"Error: {e}"})
             )
             return
-        await params.llm.push_frame(
-            RTVIServerMessageFrame(data={"web-application-end": True})
-        )
+        await params.llm.push_frame(RTVIServerMessageFrame(data={"web-application-end": True}))
 
     def generate_single_page_app_schema(self):
         return FunctionSchema(
