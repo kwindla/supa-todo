@@ -1,5 +1,5 @@
 agent_name = "khk-todo"
-image = "pluot/khk-todo:0.6"
+image = "pluot/khk-todo:0.7"
 secret_set = "khk-todo-secrets"
 image_credentials = "dockerhub"
 enable_krisp = true
